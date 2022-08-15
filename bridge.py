@@ -58,9 +58,9 @@ async def connect():
 async def setup():
     global systems
     log.info('setup')
-    for system_name, system_conf in conf['system'].items():
-        log.info(f'setup system "{system_name}')
-        systems[system_name] = System(xknx_binding, system_name, system_conf)
+    for system_key, system_conf in conf['system'].items():
+        log.info(f'setup system "{system_key}')
+        systems[system_key] = System(xknx_binding, system_key, system_conf)
     log.info('setup done')
 
 

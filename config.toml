@@ -1,13 +1,26 @@
 [knx]
 gateway = "10.5.35.11"
 
-[system."Kleiner Meetingraum"]
-power_state.group_address = "3/0/30"
-power_state.protocol = "dummy"
-power_state.host = "screen.small-room.smedia.tools"
+[system.kleiner_meetingraum]
+name = "Kleiner Metingraum"
 
-zeevee.output = "Fernseher Kleiner Meetingraum"
+[system.kleiner_meetingraum.power_state]
+group_address = "3/0/30"
+protocol = "dummy"
+host = "screen.small-room.smedia.tools"
 
-zeevee.input."HDMI Kabel Kleiner Meetingraum".group_address = "3/0/31"
-zeevee.input."AppleTV Kleiner Meetingraum".group_address = "3/0/32"
-zeevee.input."ChromeCast Kleiner Meetingraum".group_address = "3/0/33"
+[system.kleiner_meetingraum.mux]
+protocol = "zeevee"
+zeevee_output = "Fernseher Kleiner Meetingraum"
+
+[system.kleiner_meetingraum.mux.input.hdmi]
+group_address = "3/0/31"
+zeevee_name = "HDMI Kabel Kleiner Meetingraum"
+
+[system.kleiner_meetingraum.mux.input.appletv]
+group_address = "3/0/32"
+zeevee_name = "AppleTV Kleiner Meetingraum"
+
+[system.kleiner_meetingraum.mux.input.chromecast]
+group_address = "3/0/33"
+zeevee_name = "ChromeCast Kleiner Meetingraum"
