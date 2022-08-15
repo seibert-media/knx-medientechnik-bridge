@@ -10,7 +10,7 @@ protocol = "dummy"
 host = "screen.small-room.smedia.tools"
 
 [system.kleiner_meetingraum.mux]
-protocol = "zeevee"
+protocol = "dummy"
 zeevee_output = "Fernseher Kleiner Meetingraum"
 
 [system.kleiner_meetingraum.mux.input.hdmi]

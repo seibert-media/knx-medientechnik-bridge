@@ -10,6 +10,4 @@ class MuxHandlerZeeVee(MuxHandler):
         pass
 
     async def get_current_input(self) -> str:
-        result = ""
-        self.log.debug(f'Query Result: {result}')
-        return result
+        return ""

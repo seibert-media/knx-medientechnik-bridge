@@ -10,6 +10,7 @@ import toml as toml
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 
+from dummy_input import dummy_input_handler
 from system import System
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
@@ -67,6 +68,9 @@ async def setup():
 async def teardown():
     log.info("teardown")
     await xknx_binding.stop()
+    for system in systems.values():
+        system.stop()
+    dummy_input_handler().stop()
     log.info("teardown done")
 
 

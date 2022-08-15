@@ -7,6 +7,7 @@ class MuxHandler(ABC):
     def __init__(self, system_key, conf):
         self.system_key = system_key
         self.conf = conf
+        self.inputs = conf['input']
 
         self.log = logging.getLogger(f'bridge.system["{system_key}"].mux')
 

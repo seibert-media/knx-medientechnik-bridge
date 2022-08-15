@@ -8,6 +8,8 @@ from handlers import POWER_STATE_HANDLERS, MUX_HANDLERS
 from mux_handler import MuxHandler
 from power_state_handler import PowerStateHandler
 
+MONITOR_INTERVAL_SECONDS = 5
+
 
 def create_knx_binding(xknx_binding, group_address, binding_name, updated_cb):
     return xknx.devices.Switch(
@@ -23,6 +25,9 @@ def create_knx_binding(xknx_binding, group_address, binding_name, updated_cb):
 
 class System(object):
     def __init__(self, xknx_binding, system_key, system_conf):
+        self.system_key = system_key
+        self.system_conf = system_conf
+
         self.log = logging.getLogger(f'bridge.system["{system_key}"]')
         self.log.info('setup')
 
@@ -52,7 +57,13 @@ class System(object):
                 lambda button, bound_input_key=input_key: self.on_input_button_pressed(button, bound_input_key))
             self.log.debug(f'setup input_button_bindings for "{input_key}" done')
 
+        self.log.debug('starting monitor_task task')
+        self.monitor_task = asyncio.create_task(self.monitor_device_state())
         self.log.info('setup done')
+
+    def stop(self):
+        self.log.debug('stopping monitor_task task')
+        self.monitor_task.cancel()
 
     async def on_power_button_toggled(self, switch: xknx.devices.Switch):
         if switch.switch.telegram.direction == TelegramDirection.OUTGOING:
@@ -69,6 +80,7 @@ class System(object):
                 self.power_state_handler.power_off(),
                 self.set_input_selection_buttons_to_off()
             )
+        self.log.info(f'power_button toggled to {switch.state} done')
 
     async def on_input_button_pressed(self, switch: xknx.devices.Switch, input_key):
         if switch.switch.telegram.direction == TelegramDirection.OUTGOING:
@@ -82,6 +94,7 @@ class System(object):
                 self.mux_handler.select_input(input_key),
                 self.set_input_selection_buttons_to_off(except_input=input_key)
             )
+            self.log.info(f'input_button "{input_key}" pressed done')
 
     async def set_power_button_to_on(self):
         self.log.debug(f'setting power_button to on')
@@ -105,3 +118,39 @@ class System(object):
             for input_key, binding in self.input_button_bindings.items()
         ])
         self.log.debug(f'setting input_selection_buttons to "{current_input}" done')
+
+    async def monitor_device_state(self):
+        self.log.info(f'starting device state monitor')
+        while True:
+            await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
+
+            self.log.debug(f'checking current device state')
+            current_power_state, current_input = await asyncio.gather(
+                self.power_state_handler.is_powered_on(),
+                self.mux_handler.get_current_input(),
+            )
+
+            if current_power_state != bool(self.power_button_binding.state):
+                self.log.debug(
+                    f'device power_state changed externally to {current_power_state}, updating power_button')
+                if current_power_state:
+                    await asyncio.gather(
+                        self.power_button_binding.set_on(),
+                        self.set_input_selection_buttons_to_current_input()
+                    )
+                else:
+                    await asyncio.gather(
+                        self.power_button_binding.set_off(),
+                        self.set_input_selection_buttons_to_off()
+                    )
+                self.log.debug(
+                    f'device power_state changed externally to {current_power_state}, updating power_button done')
+
+            if current_input in self.input_button_bindings and self.input_button_bindings[current_input].state is False:
+                if not current_power_state:
+                    self.log.debug(f'device input changed externally to {current_input} '
+                                   f'but device is powered off, not updating buttons')
+                else:
+                    self.log.debug(f'device input changed externally to {current_input}, updating input_buttons')
+                    await self.set_input_selection_buttons_to_current_input()
+                    self.log.debug(f'device input changed externally to {current_input}, updating input_buttons done')
