@@ -1,7 +1,7 @@
 [knx]
 gateway = "10.5.35.11"
 
-[room."Kleiner Meetingraum"]
+[system."Kleiner Meetingraum"]
 power_state.group_address = "3/0/30"
 power_state.protocol = "dummy"
 power_state.host = "screen.small-room.smedia.tools"

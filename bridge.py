@@ -10,7 +10,7 @@ import toml as toml
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 
-from room import Room
+from system import System
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger("bridge")
@@ -38,7 +38,7 @@ if conf is None:
     sys.exit(1)
 
 xknx_binding: Optional[XKNX] = None
-rooms = dict()
+systems = dict()
 
 
 async def connect():
@@ -56,11 +56,11 @@ async def connect():
 
 
 async def setup():
-    global rooms
+    global systems
     log.info('setup')
-    for room_name, room_conf in conf['room'].items():
-        log.info(f'setup room "{room_name}')
-        rooms[room_name] = Room(xknx_binding, room_name, room_conf)
+    for system_name, system_conf in conf['system'].items():
+        log.info(f'setup system "{system_name}')
+        systems[system_name] = System(xknx_binding, system_name, system_conf)
     log.info('setup done')
 
 

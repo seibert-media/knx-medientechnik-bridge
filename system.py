@@ -21,33 +21,33 @@ def create_knx_binding(xknx_binding, group_address, binding_name, updated_cb):
     )
 
 
-class Room(object):
-    def __init__(self, xknx_binding, room_name, room_conf):
-        self.log = logging.getLogger(f'bridge.room["{room_name}"]')
+class System(object):
+    def __init__(self, xknx_binding, system_name, system_conf):
+        self.log = logging.getLogger(f'bridge.system["{system_name}"]')
         self.log.info('setup')
 
         self.log.debug('setup power_state_handler')
-        power_state_handler_class = POWER_STATE_HANDLERS[room_conf['power_state']['protocol']]
-        self.power_state_handler: PowerStateHandler = power_state_handler_class(room_conf['power_state'])
+        power_state_handler_class = POWER_STATE_HANDLERS[system_conf['power_state']['protocol']]
+        self.power_state_handler: PowerStateHandler = power_state_handler_class(system_conf['power_state'])
         self.log.debug('setup power_state handler done')
 
         self.log.debug('setup zeevee_mux')
-        self.zeevee_mux = ZeeVeeMux(room_conf['zeevee']['output'])
+        self.zeevee_mux = ZeeVeeMux(system_conf['zeevee']['output'])
         self.log.debug('setup zeevee mux done')
 
         self.log.debug('setup power_button_binding')
         self.power_button_binding = create_knx_binding(
-            xknx_binding, room_conf['power_state']['group_address'],
-            f'{room_name} Power State',
+            xknx_binding, system_conf['power_state']['group_address'],
+            f'{system_name} Power State',
             self.on_power_button_toggled)
         self.log.debug('setup power_button_binding done')
 
         self.input_button_bindings = dict()
-        for input_name, input_conf in room_conf['zeevee']['input'].items():
+        for input_name, input_conf in system_conf['zeevee']['input'].items():
             self.log.debug(f'setup input_button_bindings for "{input_name}"')
             self.input_button_bindings[input_name] = create_knx_binding(
                 xknx_binding, input_conf['group_address'],
-                f'{room_name} Input {input_name}',
+                f'{system_name} Input {input_name}',
                 lambda button, bound_input_name=input_name: self.on_input_button_pressed(button, bound_input_name))
             self.log.debug(f'setup input_button_bindings for "{input_name}" done')
 
