@@ -23,6 +23,7 @@ config_files = ['/etc/knx-medientechnik-bridge.toml', os.getcwd() + '/config.tom
 if os.getenv('CONFIG_FILE') is not None:
     config_files = [os.getenv('CONFIG_FILE')]
 
+conf = None
 for config_file in config_files:
     log.debug(f'trying {config_file}')
     try:
@@ -34,7 +35,7 @@ for config_file in config_files:
 
 if conf is None:
     log.error('could not read any of the specified config-files.')
-    log.info('tried ', config_files)
+    log.info(f'tried {config_files}')
     log.info('use CONFIG_FILE env-variable to explicitly specify a location')
     sys.exit(1)
 
