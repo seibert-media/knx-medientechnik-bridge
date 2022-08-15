@@ -7,6 +7,7 @@ name = "Kleiner Metingraum"
 [system.kleiner_meetingraum.power_state]
 group_address = "3/0/30"
 protocol = "dummy"
+password = "foobar23"
 host = "screen.small-room.smedia.tools"
 
 [system.kleiner_meetingraum.mux]
