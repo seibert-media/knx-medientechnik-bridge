@@ -3,18 +3,18 @@ from abc import ABC
 
 
 class PowerStateHandler(ABC):
+    @abc.abstractmethod
     def __init__(self, conf):
-        self.host = conf
-        self._temp_internal_state = False
+        self.conf = conf
 
     @abc.abstractmethod
     async def power_on(self):
-        self._temp_internal_state = True
+        pass
 
     @abc.abstractmethod
     async def power_off(self):
-        self._temp_internal_state = False
+        pass
 
     @abc.abstractmethod
     async def is_powered_on(self) -> bool:
-        return self._temp_internal_state
+        pass

@@ -2,12 +2,12 @@
 gateway = "10.5.35.11"
 
 [room."Kleiner Meetingraum"]
-power_state.group_address = "3/0/0"
-power_state.protocol = "pjlink"
-power_state.host = "1.2.3.4"
+power_state.group_address = "3/0/30"
+power_state.protocol = "dummy"
+power_state.host = "screen.small-room.smedia.tools"
 
 zeevee.output = "Fernseher Kleiner Meetingraum"
 
-zeevee.input."HDMI Kabel Kleiner Meetingraum".group_address = "3/0/1"
-zeevee.input."AppleTV Kleiner Meetingraum".group_address = "3/0/2"
-zeevee.input."ChromeCast Kleiner Meetingraum".group_address = "3/0/3"
+zeevee.input."HDMI Kabel Kleiner Meetingraum".group_address = "3/0/31"
+zeevee.input."AppleTV Kleiner Meetingraum".group_address = "3/0/32"
+zeevee.input."ChromeCast Kleiner Meetingraum".group_address = "3/0/33"

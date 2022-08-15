@@ -45,7 +45,7 @@ async def connect():
     global xknx_binding
     log.info('connect')
     connection_config = ConnectionConfig()
-    connection_config.connection_type = ConnectionType.TUNNELING_TCP
+    connection_config.connection_type = ConnectionType.TUNNELING
     connection_config.gateway_ip = conf['knx']['gateway']
     xknx_binding = XKNX(connection_config=connection_config)
     log.info('connect done')

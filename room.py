@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import xknx.devices
+from xknx.telegram import TelegramDirection
 
 from power_state_handler import PowerStateHandler
 from power_state_handlers import POWER_STATE_HANDLERS
@@ -34,66 +35,72 @@ class Room(object):
         self.zeevee_mux = ZeeVeeMux(room_conf['zeevee']['output'])
         self.log.debug('setup zeevee mux done')
 
-        self.log.debug('setup power_state_binding')
-        self.power_state_binding = create_knx_binding(
+        self.log.debug('setup power_button_binding')
+        self.power_button_binding = create_knx_binding(
             xknx_binding, room_conf['power_state']['group_address'],
             f'{room_name} Power State',
-            self.on_power_state_changed)
-        self.log.debug('setup power_state_binding done')
+            self.on_power_button_toggled)
+        self.log.debug('setup power_button_binding done')
 
-        self.input_bindings = dict()
+        self.input_button_bindings = dict()
         for input_name, input_conf in room_conf['zeevee']['input'].items():
-            self.log.debug(f'setup input_binding for "{input_name}"')
-            self.input_bindings[input_name] = create_knx_binding(
+            self.log.debug(f'setup input_button_bindings for "{input_name}"')
+            self.input_button_bindings[input_name] = create_knx_binding(
                 xknx_binding, input_conf['group_address'],
                 f'{room_name} Input {input_name}',
-                lambda switch, bound_input_name=input_name: self.on_input_changed(switch, bound_input_name))
-            self.log.debug(f'setup input_binding for "{input_name}" done')
+                lambda button, bound_input_name=input_name: self.on_input_button_pressed(button, bound_input_name))
+            self.log.debug(f'setup input_button_bindings for "{input_name}" done')
 
         self.log.info('setup done')
 
-    async def on_power_state_changed(self, switch: xknx.devices.Switch):
-        self.log.debug(f'power_state switch changed to {switch.state}')
-        if switch.state:
-            await self.power_on()
-        else:
-            await self.power_off()
+    async def on_power_button_toggled(self, switch: xknx.devices.Switch):
+        if switch.switch.telegram.direction == TelegramDirection.OUTGOING:
+            return
 
-    async def on_input_changed(self, switch: xknx.devices.Switch, input_name):
+        self.log.info(f'power_button toggled to {switch.state}')
         if switch.state:
-            self.log.info(f'input switch activated: {input_name}')
             await asyncio.gather(
-                self.power_on(),
-                self.zeevee_mux.select_input(input_name),
-                self.set_input_selection_switches_to_off(except_input=input_name)
+                self.power_state_handler.power_on(),
+                self.set_input_selection_buttons_to_current_input()
+            )
+        else:
+            await asyncio.gather(
+                self.power_state_handler.power_off(),
+                self.set_input_selection_buttons_to_off()
             )
 
-    async def set_input_selection_switches_to_off(self, except_input=None):
-        self.log.info(f'setting input-switches to off (excluding {except_input})')
+    async def on_input_button_pressed(self, switch: xknx.devices.Switch, input_name):
+        if switch.switch.telegram.direction == TelegramDirection.OUTGOING:
+            return
+
+        if switch.state:
+            self.log.info(f'input_button "{input_name}" pressed')
+            await asyncio.gather(
+                self.set_power_button_to_on(),
+                self.power_state_handler.power_on(),
+                self.zeevee_mux.select_input(input_name),
+                self.set_input_selection_buttons_to_off(except_input=input_name)
+            )
+
+    async def set_power_button_to_on(self):
+        self.log.debug(f'setting power_button to on')
+        await self.power_button_binding.set_on()
+        self.log.debug(f'setting power_button to on done')
+
+    async def set_input_selection_buttons_to_off(self, except_input=None):
+        self.log.debug(f'setting input_selection_buttons to off (except {except_input})')
         await asyncio.gather(*[
-            binding.switch.set(input_name == except_input)
-            for input_name, binding in self.input_bindings.items()
+            binding.switch.off()
+            for input_name, binding in self.input_button_bindings.items()
+            if except_input is None or input_name != except_input
         ])
-        self.log.info(f'setting input-switches to off (excluding {except_input}) done')
+        self.log.debug(f'setting input_selection_buttons to off (except {except_input}) done')
 
-    async def power_on(self):
-        self.log.info('power on')
-        await asyncio.gather(
-            self.power_state_binding.set_on(),
-            self.power_state_handler.power_on(),
-            self.set_input_selection_switches_to_current_input()
-        )
-        self.log.info('power on done')
-
-    async def power_off(self):
-        self.log.info('power off')
-        await asyncio.gather(
-            self.power_state_binding.set_off(),
-            self.power_state_handler.power_off(),
-            self.set_input_selection_switches_to_off()
-        )
-        self.log.info('power off done')
-
-    async def set_input_selection_switches_to_current_input(self):
+    async def set_input_selection_buttons_to_current_input(self):
         current_input = await self.zeevee_mux.get_current_input()
-        await self.set_input_selection_switches_to_off(current_input)
+        self.log.debug(f'setting input_selection_buttons to "{current_input}"')
+        await asyncio.gather(*[
+            binding.switch.set(input_name == current_input)
+            for input_name, binding in self.input_button_bindings.items()
+        ])
+        self.log.debug(f'setting input_selection_buttons to "{current_input}" done')
