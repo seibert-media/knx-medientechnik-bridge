@@ -6,6 +6,7 @@ import os
 import sys
 from typing import Optional
 
+import coloredlogs
 import toml as toml
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
@@ -13,9 +14,8 @@ from xknx.io import ConnectionConfig, ConnectionType
 from dummy_input import dummy_input_handler
 from system import System
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+coloredlogs.install(fmt='%(asctime)s %(levelname)5s %(name)s %(message)s', level=os.getenv('LOGGING', logging.INFO))
 log = logging.getLogger("bridge")
-log.setLevel(os.getenv('LOGGING', logging.INFO))
 
 logging.getLogger("xknx").setLevel(os.getenv('XKNX_LOGGING', logging.WARNING))
 

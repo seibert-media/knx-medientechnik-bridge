@@ -120,7 +120,6 @@ class System(object):
         self.log.debug(f'setting input_selection_buttons to "{current_input}" done')
 
     async def monitor_device_state(self):
-        self.log.info(f'starting device state monitor')
         while True:
             await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
 
