@@ -12,7 +12,7 @@ class MuxHandler(ABC):
         self.log = logging.getLogger(f'bridge.system["{system_key}"].mux')
 
     @abc.abstractmethod
-    async def select_input(self, input_key: str):
+    async def select_input(self, input_key: str) -> bool:
         pass
 
     @abc.abstractmethod

@@ -9,9 +9,10 @@ class MuxHandlerDummy(MuxHandler):
         for input_key in self.inputs.keys():
             dummy_input_handler().register_dummy_mux_callback(system_key, input_key, self.externally_set_input)
 
-    async def select_input(self, input_key: str):
+    async def select_input(self, input_key: str) -> bool:
         self.log.info(f'Switching to {input_key}')
         self.input_key = input_key
+        return True
 
     async def get_current_input(self) -> str:
         return self.input_key

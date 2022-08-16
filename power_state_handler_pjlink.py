@@ -1,4 +1,10 @@
+import asyncio
+import hashlib
+import re
+
 from power_state_handler import PowerStateHandler
+
+PJLINK_PORT = 4352
 
 
 class PowerStateHandlerPJLink(PowerStateHandler):
@@ -8,13 +14,37 @@ class PowerStateHandlerPJLink(PowerStateHandler):
         self.password = conf['password']
 
     async def send_command(self, command: str) -> str:
-        # connect
-        # receive token
-        # token + password | md5
-        # "hash%1POWR ?"
-        # read next line
-        # disconnect
-        pass
+        self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
+        reader, writer = await asyncio.open_connection(self.host, PJLINK_PORT)
+
+        welcome_line = (await reader.readline()).decode('ascii').rstrip()
+        self.log.debug(f'received welcome_line {welcome_line}')
+
+        auth_prefix = ""
+        match = re.match('PJLINK 1 .+', welcome_line)
+        if match:
+            # so-called security
+            nonce = match.group(1)
+            auth_prefix = hashlib.md5(nonce + self.password)
+        elif welcome_line == 'PJLINK 0':
+            # no security
+            pass
+        else:
+            self.log.warn(f'unexpected Welcome-Line from PJLink Host {self.host}:{PJLINK_PORT} - {welcome_line}')
+
+        command_line = (auth_prefix + command).encode('ascii')
+        self.log.debug(f'sending command_line {command_line}')
+        writer.write(command_line)
+        await writer.drain()
+
+        response_line = (await reader.readline()).decode('ascii').rstrip()
+        self.log.debug(f'received response_line {response_line}')
+
+        self.log.debug(f'disconnecting from {self.host}:{PJLINK_PORT}')
+        writer.close()
+        await writer.wait_closed()
+
+        return response_line
 
     async def power_on(self) -> bool:
         self.log.info('Turning on')
