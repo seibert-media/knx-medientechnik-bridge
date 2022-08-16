@@ -61,7 +61,6 @@ async def setup():
     global systems
     log.info('setup')
     for system_key, system_conf in conf['system'].items():
-        log.info(f'setup system "{system_key}')
         systems[system_key] = System(xknx_binding, system_key, system_conf)
     log.info('setup done')
 
@@ -78,6 +77,8 @@ async def teardown():
 loop = asyncio.get_event_loop()
 loop.run_until_complete(connect())
 loop.run_until_complete(setup())
+
+log.info('operational')
 
 try:
     loop.run_forever()
