@@ -17,27 +17,28 @@ class PowerStateHandlerPJLink(PowerStateHandler):
         self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
         reader, writer = await asyncio.open_connection(self.host, PJLINK_PORT)
 
-        welcome_line = (await reader.readline()).decode('ascii').rstrip()
+        welcome_line = (await reader.read(100)).decode('ascii').rstrip()
         self.log.debug(f'received welcome_line {welcome_line}')
 
-        auth_prefix = ""
-        match = re.match('PJLINK 1 .+', welcome_line)
+        auth_prefix = None
+        match = re.match('PJLINK 1 (.+)', welcome_line)
         if match:
             # so-called security
             nonce = match.group(1)
-            auth_prefix = hashlib.md5(nonce + self.password)
+            nonced_password = nonce + self.password
+            auth_prefix = hashlib.md5(nonced_password.encode('ascii')).hexdigest()
         elif welcome_line == 'PJLINK 0':
             # no security
             pass
         else:
             self.log.warn(f'unexpected Welcome-Line from PJLink Host {self.host}:{PJLINK_PORT} - {welcome_line}')
 
-        command_line = (auth_prefix + command).encode('ascii')
+        command_line = auth_prefix + command + "\r\n"
         self.log.debug(f'sending command_line {command_line}')
-        writer.write(command_line)
+        writer.write(command_line.encode('ascii'))
         await writer.drain()
 
-        response_line = (await reader.readline()).decode('ascii').rstrip()
+        response_line = (await reader.read(1000)).decode('ascii').rstrip()
         self.log.debug(f'received response_line {response_line}')
 
         self.log.debug(f'disconnecting from {self.host}:{PJLINK_PORT}')

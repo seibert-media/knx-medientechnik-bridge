@@ -14,31 +14,51 @@ class MuxHandlerZeeVee(MuxHandler):
     async def select_input(self, input_key: str):
         self.log.info(f'Switching to {input_key}')
 
-        src = self.inputs[input_key]['zeevee_name']
+        src = self.inputs[input_key].get('zeevee_name', None)
         dest = self.conf['zeevee_output']
+        if src is None:
+            await self.unlink(dest)
+        else:
+            await self.link(dest, src)
 
+    async def unlink(self, dest):
+        command_line = f'join none {dest} fastSwitched'
+        success = await self.send_command(command_line)
+        if success:
+            self.temp_current_input = None
+
+    async def link(self, dest, src):
+        command = f'join {src} {dest} fastSwitched'
+        response = await self.send_command(command)
+        success = response == 'Success'
+
+        if success:
+            self.temp_current_input = src
+
+        return success
+
+    async def get_current_input(self) -> str:
+        # Zyper$ show device connections
+        # encoder.EventSpaceAppleTv.hdmiAudio; EncoderIN, EventSpaceRegieDisplay, EventSpaceConfidenceScreen, EventSpaceBeamer
+        # encoder.EventSpaceAppleTv.video; EncoderIN, EventSpaceRegieDisplay, EventSpaceConfidenceScreen, EventSpaceBeamer
+        # encoder.hq-infobeamer1.hdmiAudio; KuecheDisplay
+        # encoder.hq-infobeamer1.video; KuecheDisplay, EmpfangDisplay1, EmpfangDisplay2
+
+        # command = f'show device connections'
+        # response = await self.send_command(command)
+        # for line in response.rstrip().split("\b"):
+        #    self.log.debug(f'line {line}')  # TODO
+
+        return self.temp_current_input
+
+    async def send_command(self, command):
         self.log.debug(f'connecting to {self.host}:{TELNET_PORT}')
         with Telnet(self.host, TELNET_PORT) as tn:
             tn.read_until(b'Zyper$', 10)
-            command_line = f'join {src} {dest} fastSwitched'
-            self.log.debug(f'sending command_line {command_line}')
-            tn.write(f'{command_line}\n'.encode('ascii'))
+            self.log.debug(f'sending command_line {command}')
+            tn.write(f'{command}\n'.encode('ascii'))
 
-            ret = tn.expect([
-                br'.*\n(Error:.*)',
-                br'.*\n(Success)'
-            ], 10)
+            response = tn.read_until(b"\n", 10)
+            self.log.debug(f'received response {response}')
 
-            response_line = ret[1].group(1)
-            self.log.debug(f'received response_line {response_line}')
-
-            success = response_line == 'Success'
-
-            if success:
-                self.temp_current_input = input_key
-
-            return success
-
-    async def get_current_input(self) -> str:
-        # TODO send `show device connections` command
-        return self.temp_current_input
+            return response.decode('ascii')
