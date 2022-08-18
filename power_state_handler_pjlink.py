@@ -4,7 +4,14 @@ import re
 
 from power_state_handler import PowerStateHandler
 
+MAX_LINE_LENGTH = 1000
+
 PJLINK_PORT = 4352
+
+
+async def read_line(reader):
+    bytes_read = await reader.read(MAX_LINE_LENGTH)
+    return bytes_read.decode('ascii').rstrip()
 
 
 class PowerStateHandlerPJLink(PowerStateHandler):
@@ -17,7 +24,7 @@ class PowerStateHandlerPJLink(PowerStateHandler):
         self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
         reader, writer = await asyncio.open_connection(self.host, PJLINK_PORT)
 
-        welcome_line = (await reader.read(100)).decode('ascii').rstrip()
+        welcome_line = await read_line(reader)
         self.log.debug(f'received welcome_line {welcome_line}')
 
         auth_prefix = None
@@ -27,18 +34,20 @@ class PowerStateHandlerPJLink(PowerStateHandler):
             nonce = match.group(1)
             nonced_password = nonce + self.password
             auth_prefix = hashlib.md5(nonced_password.encode('ascii')).hexdigest()
+
         elif welcome_line == 'PJLINK 0':
             # no security
             pass
+
         else:
             self.log.warn(f'unexpected Welcome-Line from PJLink Host {self.host}:{PJLINK_PORT} - {welcome_line}')
 
         command_line = auth_prefix + command + "\r\n"
-        self.log.debug(f'sending command_line {command_line}')
+        self.log.debug(f'sending command_line {command_line.rstrip()}')
         writer.write(command_line.encode('ascii'))
         await writer.drain()
 
-        response_line = (await reader.read(1000)).decode('ascii').rstrip()
+        response_line = await read_line(reader)
         self.log.debug(f'received response_line {response_line}')
 
         self.log.debug(f'disconnecting from {self.host}:{PJLINK_PORT}')
