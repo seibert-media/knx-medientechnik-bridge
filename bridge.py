@@ -14,7 +14,10 @@ from xknx.io import ConnectionConfig, ConnectionType
 from dummy_input import dummy_input_handler
 from system import System
 
-coloredlogs.install(fmt='%(asctime)s %(levelname)5s %(name)s %(message)s', level=os.getenv('LOGGING', logging.INFO))
+coloredlogs.install(
+    fmt='%(asctime)s %(levelname)5s %(name)s %(message)s',
+    level=os.getenv('LOGGING', logging.INFO),
+    milliseconds=True)
 log = logging.getLogger("bridge")
 
 logging.getLogger("xknx").setLevel(os.getenv('XKNX_LOGGING', logging.WARNING))
@@ -50,11 +53,9 @@ async def connect():
     connection_config.connection_type = ConnectionType.TUNNELING_TCP
     connection_config.gateway_ip = conf['knx']['gateway']
     xknx_binding = XKNX(connection_config=connection_config)
-    log.info('connect done')
 
     log.info('start')
     await xknx_binding.start()
-    log.info('start done')
 
 
 async def setup():
@@ -67,7 +68,6 @@ async def setup():
         system.start()
         for system in systems.values()
     ])
-    log.info('setup done')
 
 
 async def teardown():
@@ -78,7 +78,6 @@ async def teardown():
     ], xknx_binding.stop())
 
     dummy_input_handler().stop()
-    log.info("teardown done")
 
 
 loop = asyncio.get_event_loop()
@@ -91,3 +90,4 @@ try:
     loop.run_forever()
 except KeyboardInterrupt:
     loop.run_until_complete(teardown())
+    log.info("shutdown")

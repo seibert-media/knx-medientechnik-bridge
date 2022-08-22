@@ -27,6 +27,7 @@ class PowerHandlerPJLink(PowerHandler):
         self.last_state = None
 
     async def stop(self):
+        self.log.debug('stopping')
         self.state_monitor.cancel()
 
     async def send_command(self, command: str) -> str:
@@ -81,6 +82,7 @@ class PowerHandlerPJLink(PowerHandler):
         while True:
             new_state = await self.is_powered_on()
             if self.last_state is not None and self.last_state != new_state:
+                self.log.info(f"state changed to {new_state}")
                 await self.on_device_power_changed(new_state)
 
             self.last_state = new_state
