@@ -19,7 +19,7 @@ class PowerHandlerPJLink(PowerHandler):
     def __init__(self, output_key, conf, on_device_power_changed):
         super().__init__(output_key, conf, on_device_power_changed)
         self.host = conf['host']
-        self.password = conf['password']
+        self.password = conf.get('password', None)
 
         self.command_lock = asyncio.Lock()
 
