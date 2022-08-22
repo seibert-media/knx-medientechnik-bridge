@@ -14,6 +14,8 @@ class MuxHandlerZeeVee(MuxHandler):
     async def select_input(self, input_key: str):
         self.log.info(f'Switching to {input_key}')
 
+        self.temp_current_input = input_key
+
         src = self.inputs[input_key].get('zeevee_name', None)
         dest = self.conf['zeevee_output']
         if src is None:
@@ -23,19 +25,12 @@ class MuxHandlerZeeVee(MuxHandler):
 
     async def unlink(self, dest):
         command_line = f'join none {dest} fastSwitched'
-        success = await self.send_command(command_line)
-        if success:
-            self.temp_current_input = None
+        return await self.send_command(command_line)
 
     async def link(self, dest, src):
         command = f'join {src} {dest} fastSwitched'
         response = await self.send_command(command)
-        success = response == 'Success'
-
-        if success:
-            self.temp_current_input = src
-
-        return success
+        return response == 'Success'
 
     async def get_current_input(self) -> str:
         # Zyper$ show device connections

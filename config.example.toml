@@ -4,7 +4,7 @@ gateway = "10.5.35.11"
 [system.kleiner_meetingraum]
 name = "Kleiner Metingraum"
 
-[system.kleiner_meetingraum.power_state]
+[system.kleiner_meetingraum.power]
 group_address = "3/0/30"
 protocol = "dummy"
 password = "foobar23"

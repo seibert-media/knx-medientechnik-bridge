@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import re
 
-from power_state_handler import PowerStateHandler
+from power_handler import PowerHandler
 
 MAX_LINE_LENGTH = 1000
 
@@ -14,7 +14,7 @@ async def read_line(reader):
     return bytes_read.decode('ascii').rstrip()
 
 
-class PowerStateHandlerPJLink(PowerStateHandler):
+class PowerHandlerPJLink(PowerHandler):
     def __init__(self, system_key, conf):
         super().__init__(system_key, conf)
         self.host = conf['host']

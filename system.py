@@ -1,83 +1,15 @@
 import asyncio
 import logging
-from abc import ABC
 
 import xknx.devices
 from xknx.telegram import TelegramDirection
 
-from handlers import POWER_STATE_HANDLERS, MUX_HANDLERS
+from handlers import POWER_HANDLERS, MUX_HANDLERS
+from knxbinding import DualAddressKnxBinding, SingleAddressKnxBinding
 from mux_handler import MuxHandler
-from power_state_handler import PowerStateHandler
+from power_handler import PowerHandler
 
 MONITOR_INTERVAL_SECONDS = 1
-
-
-class KnxBinding(ABC):
-    def __init__(self, control_binding: xknx.devices.Switch, status_binding: xknx.devices.Switch):
-        self.status_binding = status_binding
-        self.control_binding = control_binding
-
-    @property
-    def state(self):
-        return self.status_binding.state
-
-    async def set_status(self, new_status: bool):
-        self.control_binding.switch.value = new_status
-        await self.status_binding.switch.set(new_status)
-
-    async def set_status_on(self):
-        await self.set_status(True)
-
-    async def set_status_off(self):
-        await self.set_status(False)
-
-
-class DualAddressKnxBinding(KnxBinding):
-    def __init__(self, xknx_binding, group_address, group_address_sta, binding_name, updated_cb):
-        super().__init__(
-            # receive commands here
-            xknx.devices.Switch(
-                xknx_binding,
-                name=binding_name,
-                group_address=group_address,
-                respond_to_read=False, sync_state=False,
-                device_updated_cb=updated_cb
-            ),
-
-            # write status here
-            xknx.devices.Switch(
-                xknx_binding,
-                name=binding_name + " Sta",
-                group_address=group_address_sta,
-                respond_to_read=True, sync_state=False
-            )
-        )
-
-
-class SingleAddressKnxBinding(KnxBinding):
-    def __init__(self, xknx_binding, group_address, binding_name, updated_cb):
-        bidi_binding = xknx.devices.Switch(
-            xknx_binding,
-            name=binding_name,
-            group_address=group_address,
-            # we *are* the switch, so we behave like a true knx device and respond to reads
-            # while not trying to read the state from another device on the bus
-            respond_to_read=True, sync_state=False,
-            device_updated_cb=updated_cb
-        )
-        super().__init__(bidi_binding, bidi_binding)
-
-
-def create_knx_binding(xknx_binding, group_address, binding_name, updated_cb):
-    return xknx.devices.Switch(
-        xknx_binding,
-        name=binding_name,
-        group_address=group_address,
-        # we *are* the switch, so we behave like a true knx device and respond to reads
-        # while not trying to read the state from another device on the bus
-        respond_to_read=True, sync_state=False,
-        device_updated_cb=updated_cb
-    )
 
 
 class System(object):
@@ -88,10 +20,10 @@ class System(object):
         self.log = logging.getLogger(f'bridge.system["{system_key}"]')
         self.log.info('setup')
 
-        self.log.debug('setup power_state_handler')
-        power_state_handler_class = POWER_STATE_HANDLERS[system_conf['power_state']['protocol']]
-        self.power_state_handler: PowerStateHandler = power_state_handler_class(system_key, system_conf['power_state'])
-        self.log.debug('setup power_state handler done')
+        self.log.debug('setup power_handler')
+        power_handler_class = POWER_HANDLERS[system_conf['power']['protocol']]
+        self.power_handler: PowerHandler = power_handler_class(system_key, system_conf['power'])
+        self.log.debug('setup power handler done')
 
         self.log.debug('setup mux_handler')
         mux_handler_class = MUX_HANDLERS[system_conf['mux']['protocol']]
@@ -101,9 +33,9 @@ class System(object):
         self.log.debug('setup power_button_binding')
         self.power_button_binding = DualAddressKnxBinding(
             xknx_binding,
-            system_conf['power_state']['group_address'],
-            system_conf['power_state']['group_address_sta'],
-            f'{system_key} Power State',
+            system_conf['power']['group_address'],
+            system_conf['power']['group_address_sta'],
+            f'{system_key} Power',
             self.on_power_button_toggled)
         self.log.debug('setup power_button_binding done')
 
@@ -132,12 +64,12 @@ class System(object):
         self.log.info(f'power_button toggled to {switch.state}')
         if switch.state:
             await asyncio.gather(
-                self.power_state_handler.power_on(),
+                self.power_handler.power_on(),
                 self.set_input_selection_buttons_to_current_input()
             )
         else:
             await asyncio.gather(
-                self.power_state_handler.power_off(),
+                self.power_handler.power_off(),
                 self.set_input_selection_buttons_to_off()
             )
         self.log.info(f'power_button toggled to {switch.state} done')
@@ -150,7 +82,7 @@ class System(object):
             self.log.info(f'input_button "{input_key}" pressed')
             await asyncio.gather(
                 self.set_power_button_to_on(),
-                self.power_state_handler.power_on(),
+                self.power_handler.power_on(),
                 self.mux_handler.select_input(input_key),
                 self.set_input_selection_buttons_to_off(except_input=input_key)
             )
@@ -184,15 +116,15 @@ class System(object):
             await asyncio.sleep(MONITOR_INTERVAL_SECONDS)
 
             self.log.debug(f'checking current device state')
-            current_power_state, current_input = await asyncio.gather(
-                self.power_state_handler.is_powered_on(),
+            current_power, current_input = await asyncio.gather(
+                self.power_handler.is_powered_on(),
                 self.mux_handler.get_current_input(),
             )
 
-            if current_power_state != bool(self.power_button_binding.state):
+            if current_power != bool(self.power_button_binding.state):
                 self.log.debug(
-                    f'device power_state changed externally to {current_power_state}, updating power_button')
-                if current_power_state:
+                    f'device power changed externally to {current_power}, updating power_button')
+                if current_power:
                     await asyncio.gather(
                         self.power_button_binding.set_status_on(),
                         self.set_input_selection_buttons_to_current_input()
@@ -203,10 +135,10 @@ class System(object):
                         self.set_input_selection_buttons_to_off()
                     )
                 self.log.debug(
-                    f'device power_state changed externally to {current_power_state}, updating power_button done')
+                    f'device power changed externally to {current_power}, updating power_button done')
 
             if current_input in self.input_button_bindings and self.input_button_bindings[current_input].state is False:
-                if not current_power_state:
+                if not current_power:
                     self.log.debug(f'device input changed externally to {current_input} '
                                    f'but device is powered off, not updating buttons')
                 else:

@@ -1,11 +1,11 @@
 from mux_handler_dummy import MuxHandlerDummy
 from mux_handler_zeevee import MuxHandlerZeeVee
-from power_state_handler_dummy import PowerStateHandlerDummy
-from power_state_handler_pjlink import PowerStateHandlerPJLink
+from power_handler_dummy import PowerHandlerDummy
+from power_handler_pjlink import PowerHandlerPJLink
 
-POWER_STATE_HANDLERS = {
-    'dummy': PowerStateHandlerDummy,
-    'pjlink': PowerStateHandlerPJLink,
+POWER_HANDLERS = {
+    'dummy': PowerHandlerDummy,
+    'pjlink': PowerHandlerPJLink,
 }
 
 MUX_HANDLERS = {
