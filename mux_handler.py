@@ -4,13 +4,13 @@ from abc import ABC
 
 
 class MuxHandler(ABC):
-    def __init__(self, system_key, conf, on_mux_input_changed):
-        self.system_key = system_key
+    def __init__(self, output_key, conf, on_mux_input_changed):
+        self.output_key = output_key
         self.conf = conf
         self.inputs = conf['input']
         self.on_mux_input_changed_cb = on_mux_input_changed
 
-        self.log = logging.getLogger(f'bridge.system["{system_key}"].mux')
+        self.log = logging.getLogger(f'bridge.output["{output_key}"].mux')
 
     @abc.abstractmethod
     async def select_input(self, input_key: str) -> bool:

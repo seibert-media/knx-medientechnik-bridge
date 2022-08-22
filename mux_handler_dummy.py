@@ -3,11 +3,11 @@ from mux_handler import MuxHandler
 
 
 class MuxHandlerDummy(MuxHandler):
-    def __init__(self, system_key, conf, on_mux_input_changed):
-        super().__init__(system_key, conf, on_mux_input_changed)
+    def __init__(self, output_key, conf, on_mux_input_changed):
+        super().__init__(output_key, conf, on_mux_input_changed)
         self.input_key = None
         for input_key in self.inputs.keys():
-            dummy_input_handler().register_dummy_mux_callback(system_key, input_key, self.externally_set_input)
+            dummy_input_handler().register_dummy_mux_callback(output_key, input_key, self.externally_set_input)
 
     async def select_input(self, input_key: str) -> bool:
         self.log.info(f'Switching to {input_key}')

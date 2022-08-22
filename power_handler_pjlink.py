@@ -16,8 +16,8 @@ async def read_line(reader):
 
 
 class PowerHandlerPJLink(PowerHandler):
-    def __init__(self, system_key, conf, on_device_power_changed):
-        super().__init__(system_key, conf, on_device_power_changed)
+    def __init__(self, output_key, conf, on_device_power_changed):
+        super().__init__(output_key, conf, on_device_power_changed)
         self.host = conf['host']
         self.password = conf['password']
 

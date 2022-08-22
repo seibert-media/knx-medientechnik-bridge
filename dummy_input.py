@@ -34,14 +34,14 @@ class DummyInputHandler:
         self.log.debug('starting read_stdin task')
         self.task = asyncio.create_task(self.read_stdin())
 
-    def register_dummy_power_callback(self, system_key, cb):
-        self.log.info(f'Write "{system_key}:on" or "{system_key}:off" to toggle Power for {system_key}')
-        self.callbacks[f'{system_key}:on'] = lambda: cb(True)
-        self.callbacks[f'{system_key}:off'] = lambda: cb(False)
+    def register_dummy_power_callback(self, output_key, cb):
+        self.log.info(f'Write "{output_key}:on" or "{output_key}:off" to toggle Power for {output_key}')
+        self.callbacks[f'{output_key}:on'] = lambda: cb(True)
+        self.callbacks[f'{output_key}:off'] = lambda: cb(False)
 
-    def register_dummy_mux_callback(self, system_key, input_key, cb):
-        self.log.info(f'Write "{system_key}:{input_key}" to toggle Mux for {system_key}')
-        self.callbacks[f'{system_key}:{input_key}'] = lambda: cb(input_key)
+    def register_dummy_mux_callback(self, output_key, input_key, cb):
+        self.log.info(f'Write "{output_key}:{input_key}" to toggle Mux for {output_key}')
+        self.callbacks[f'{output_key}:{input_key}'] = lambda: cb(input_key)
 
     def stop(self):
         self.log.debug('stopping read_stdin task')

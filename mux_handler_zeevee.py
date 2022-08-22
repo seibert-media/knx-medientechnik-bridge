@@ -35,8 +35,8 @@ def map_connections(connection_info_lines: list[str]) -> dict:
 
 
 class MuxHandlerZeeVee(MuxHandler):
-    def __init__(self, system_key, conf, on_mux_input_changed):
-        super().__init__(system_key, conf, on_mux_input_changed)
+    def __init__(self, output_key, conf, on_mux_input_changed):
+        super().__init__(output_key, conf, on_mux_input_changed)
         self.host = conf['host']
         self.zeevee_output = conf['zeevee_output']
 

@@ -3,10 +3,10 @@ from power_handler import PowerHandler
 
 
 class PowerHandlerDummy(PowerHandler):
-    def __init__(self, system_key, conf, on_device_power_changed):
-        super().__init__(system_key, conf, on_device_power_changed)
+    def __init__(self, output_key, conf, on_device_power_changed):
+        super().__init__(output_key, conf, on_device_power_changed)
         self.power_state = False
-        dummy_input_handler().register_dummy_power_callback(system_key, self.externally_set_power)
+        dummy_input_handler().register_dummy_power_callback(output_key, self.externally_set_power)
 
     async def power_on(self) -> bool:
         self.log.info('Turning on')

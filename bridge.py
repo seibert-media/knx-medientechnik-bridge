@@ -12,7 +12,7 @@ from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 
 from dummy_input import dummy_input_handler
-from system import System
+from output import Output
 
 coloredlogs.install(
     fmt='%(asctime)s %(levelname)5s %(name)s %(message)s',
@@ -43,7 +43,7 @@ if conf is None:
     sys.exit(1)
 
 xknx_binding: Optional[XKNX] = None
-systems = dict()
+outputs = dict()
 
 
 async def connect():
@@ -59,22 +59,22 @@ async def connect():
 
 
 async def setup():
-    global systems
+    global outputs
     log.info('setup')
-    for system_key, system_conf in conf['system'].items():
-        systems[system_key] = System(xknx_binding, system_key, system_conf)
+    for output_key, output_conf in conf['output'].items():
+        outputs[output_key] = Output(xknx_binding, output_key, output_conf)
 
     await asyncio.gather(*[
-        system.start()
-        for system in systems.values()
+        output.start()
+        for output in outputs.values()
     ])
 
 
 async def teardown():
     log.info("teardown")
     await asyncio.gather(*[
-        system.stop()
-        for system in systems.values()
+        output.stop()
+        for output in outputs.values()
     ], xknx_binding.stop())
 
     dummy_input_handler().stop()

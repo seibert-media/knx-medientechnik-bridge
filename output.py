@@ -7,36 +7,36 @@ from mux_handler import MuxHandler
 from power_handler import PowerHandler
 
 
-class System(object):
-    def __init__(self, xknx_binding, system_key, system_conf):
-        self.system_key = system_key
-        self.system_conf = system_conf
+class Output(object):
+    def __init__(self, xknx_binding, output_key, output_conf):
+        self.output_key = output_key
+        self.output_conf = output_conf
 
-        self.log = logging.getLogger(f'bridge.system["{system_key}"]')
+        self.log = logging.getLogger(f'bridge.output["{output_key}"]')
         self.log.info('setup')
 
-        power_handler_class = POWER_HANDLERS[system_conf['power']['protocol']]
+        power_handler_class = POWER_HANDLERS[output_conf['power']['protocol']]
         self.power_handler: PowerHandler = power_handler_class(
-            system_key, system_conf['power'], self.on_device_power_changed)
+            output_key, output_conf['power'], self.on_device_power_changed)
 
-        mux_handler_class = MUX_HANDLERS[system_conf['mux']['protocol']]
+        mux_handler_class = MUX_HANDLERS[output_conf['mux']['protocol']]
         self.mux_handler: MuxHandler = mux_handler_class(
-            system_key, system_conf['mux'], self.on_mux_input_changed)
+            output_key, output_conf['mux'], self.on_mux_input_changed)
 
         self.power_button_binding = DualAddressKnxBinding(
             xknx_binding,
-            system_conf['power']['group_address'],
-            system_conf['power']['group_address_sta'],
-            f'{system_key} Power',
+            output_conf['power']['group_address'],
+            output_conf['power']['group_address_sta'],
+            f'{output_key} Power',
             self.on_power_button_pressed)
 
         self.input_button_bindings = dict()
-        for input_key, input_conf in system_conf['mux']['input'].items():
+        for input_key, input_conf in output_conf['mux']['input'].items():
             self.input_button_bindings[input_key] = DualAddressKnxBinding(
                 xknx_binding,
                 input_conf['group_address'],
                 input_conf['group_address_sta'],
-                f'{system_key} Input {input_key}',
+                f'{output_key} Input {input_key}',
                 lambda new_state, bound_input_key=input_key: self.on_input_button_pressed(bound_input_key, new_state))
 
         self.log.info('setup done')
