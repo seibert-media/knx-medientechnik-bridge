@@ -62,14 +62,21 @@ async def setup():
     log.info('setup')
     for system_key, system_conf in conf['system'].items():
         systems[system_key] = System(xknx_binding, system_key, system_conf)
+
+    await asyncio.gather(*[
+        system.start()
+        for system in systems.values()
+    ])
     log.info('setup done')
 
 
 async def teardown():
     log.info("teardown")
-    await xknx_binding.stop()
-    for system in systems.values():
+    await asyncio.gather(*[
         system.stop()
+        for system in systems.values()
+    ], xknx_binding.stop())
+
     dummy_input_handler().stop()
     log.info("teardown done")
 

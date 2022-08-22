@@ -52,4 +52,4 @@ class DummyInputHandler:
             line = await ainput()
             line = line.rstrip()
             if line in self.callbacks:
-                self.callbacks[line]()
+                await self.callbacks[line]()

@@ -6,8 +6,8 @@ TELNET_PORT = 23
 
 
 class MuxHandlerZeeVee(MuxHandler):
-    def __init__(self, system_key, conf):
-        super().__init__(system_key, conf)
+    def __init__(self, system_key, conf, on_mux_input_changed):
+        super().__init__(system_key, conf, on_mux_input_changed)
         self.host = conf['host']
         self.temp_current_input = None  # TODO query system
 
