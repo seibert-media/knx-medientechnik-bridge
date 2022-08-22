@@ -4,6 +4,7 @@ import re
 
 from power_handler import PowerHandler
 
+MONITOR_POLL_INTERVAL_SECONDS = 1.0
 MAX_LINE_LENGTH = 1000
 
 PJLINK_PORT = 4352
@@ -20,9 +21,7 @@ class PowerHandlerPJLink(PowerHandler):
         self.host = conf['host']
         self.password = conf['password']
 
-        self.auth_prefix = None
-        self.reader = None
-        self.writer = None
+        self.command_lock = asyncio.Lock()
 
         self.state_monitor = asyncio.create_task(self.monitor())
         self.last_state = None
@@ -31,43 +30,41 @@ class PowerHandlerPJLink(PowerHandler):
         self.state_monitor.cancel()
 
     async def send_command(self, command: str) -> str:
-        await self.open_or_reopen_socket()
-        self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
+        async with self.command_lock:
+            self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
+            reader, writer = await asyncio.open_connection(self.host, PJLINK_PORT)
 
-        command_line = self.auth_prefix + command
-        self.log.debug(f'sending command_line {command_line.rstrip()}')
-        self.writer.write((command_line + "\r\n").encode('ascii'))
-        await self.writer.drain()
+            self.log.debug(f'authenticating')
+            welcome_line = await read_line(reader)
+            self.log.debug(f'received welcome_line {welcome_line}')
 
-        response_line = await read_line(self.reader)
-        self.log.debug(f'received response_line {response_line}')
+            match = re.match('PJLINK 1 (.+)', welcome_line)
+            if match:
+                # so-called security
+                nonce = match.group(1)
+                nonced_password = nonce + self.password
+                auth_prefix = hashlib.md5(nonced_password.encode('ascii')).hexdigest()
 
-        return response_line
+            elif welcome_line == 'PJLINK 0':
+                # no security
+                auth_prefix = ""
 
-    async def open_or_reopen_socket(self):
-        if self.reader is None or self.writer is None or self.writer.is_closing():
-            self.reader, self.writer = await asyncio.open_connection(self.host, PJLINK_PORT)
+            else:
+                self.log.error(f'unexpected Welcome-Line from PJLink Host {self.host}:{PJLINK_PORT} - {welcome_line}')
 
-            await self.handle_auth()
+            command_line = auth_prefix + command
+            self.log.debug(f'sending command_line {command_line.rstrip()}')
+            writer.write((command_line + "\r\n").encode('ascii'))
+            await writer.drain()
 
-    async def handle_auth(self):
-        welcome_line = await read_line(self.reader)
-        self.log.debug(f'received welcome_line {welcome_line}')
+            response_line = await read_line(reader)
+            self.log.debug(f'received response_line {response_line}')
 
-        match = re.match('PJLINK 1 (.+)', welcome_line)
-        if match:
-            # so-called security
-            nonce = match.group(1)
-            nonced_password = nonce + self.password
-            self.auth_prefix = hashlib.md5(nonced_password.encode('ascii')).hexdigest()
+            self.log.debug(f'disconnecting')
+            writer.close()
+            await writer.wait_closed()
 
-        elif welcome_line == 'PJLINK 0':
-            # no security
-            self.auth_prefix = ""
-            pass
-
-        else:
-            self.log.error(f'unexpected Welcome-Line from PJLink Host {self.host}:{PJLINK_PORT} - {welcome_line}')
+            return response_line
 
     async def power_on(self) -> bool:
         self.log.info('Turning on')
@@ -81,8 +78,10 @@ class PowerHandlerPJLink(PowerHandler):
         return await self.send_command('%1POWR ?') == '%1POWR=1'
 
     async def monitor(self):
-        new_state = await self.is_powered_on()
-        if self.last_state is not None and self.last_state != new_state:
-            await self.on_device_power_changed(new_state)
+        while True:
+            new_state = await self.is_powered_on()
+            if self.last_state is not None and self.last_state != new_state:
+                await self.on_device_power_changed(new_state)
 
-        self.last_state = new_state
+            self.last_state = new_state
+            await asyncio.sleep(MONITOR_POLL_INTERVAL_SECONDS)
