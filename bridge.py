@@ -64,6 +64,7 @@ async def setup():
     for output_key, output_conf in conf['output'].items():
         outputs[output_key] = Output(xknx_binding, output_key, output_conf)
 
+    log.info('starting outputs')
     await asyncio.gather(*[
         output.start()
         for output in outputs.values()
@@ -90,4 +91,4 @@ try:
     loop.run_forever()
 except KeyboardInterrupt:
     loop.run_until_complete(teardown())
-    log.info("shutdown")
+    log.info("teardown")
