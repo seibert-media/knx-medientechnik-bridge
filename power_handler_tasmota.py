@@ -26,7 +26,7 @@ class PowerHandlerTasmota(PowerHandler):
         return result['POWER'] == 'ON'
 
     async def power_off(self) -> bool:
-        self.log.info('Turning on')
+        self.log.info('Turning off')
         result = await self.send_command('Power OFF')
         return result['POWER'] == 'OFF'
 
