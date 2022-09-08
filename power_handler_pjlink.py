@@ -30,6 +30,12 @@ class PowerHandlerPJLink(PowerHandler):
         self.log.debug('stopping')
         self.state_monitor.cancel()
 
+    async def try_send_command(self, command):
+        try:
+            return await self.send_command(command)
+        except:
+            self.log.warning("send_command failed")
+
     async def send_command(self, command: str) -> str:
         async with self.command_lock:
             self.log.debug(f'connecting to {self.host}:{PJLINK_PORT}')
@@ -69,14 +75,14 @@ class PowerHandlerPJLink(PowerHandler):
 
     async def power_on(self) -> bool:
         self.log.info('Turning on')
-        return await self.send_command('%1POWR 1') == '%1POWR=OK'
+        return await self.try_send_command('%1POWR 1') == '%1POWR=OK'
 
     async def power_off(self) -> bool:
         self.log.info('Turning off')
-        return await self.send_command('%1POWR 0') == '%1POWR=OK'
+        return await self.try_send_command('%1POWR 0') == '%1POWR=OK'
 
     async def is_powered_on(self) -> bool:
-        return await self.send_command('%1POWR ?') == '%1POWR=1'
+        return await self.try_send_command('%1POWR ?') == '%1POWR=1'
 
     async def monitor(self):
         while True:

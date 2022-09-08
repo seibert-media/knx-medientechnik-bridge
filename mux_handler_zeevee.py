@@ -65,18 +65,18 @@ class MuxHandlerZeeVee(MuxHandler):
 
     async def unlink(self, dest):
         command = f'join none {dest} fastSwitched'
-        result = await self.send_command(command) is True
+        result = await self.try_send_command(command) is True
         await self.update_state()
         return result
 
     async def link(self, dest, src):
         command = f'join {src} {dest} fastSwitched'
-        result = await self.send_command(command) is True
+        result = await self.try_send_command(command) is True
         await self.update_state()
         return result
 
     async def get_current_input(self) -> Optional[str]:
-        connection_info_lines = await self.send_command("show device connections")
+        connection_info_lines = await self.try_send_command("show device connections")
         zeevee_connections = map_connections(connection_info_lines)
         linked_zeevee_input = zeevee_connections.get(self.zeevee_output, None)
         self.log.debug(f'linked zeevee input of {self.zeevee_output} is {linked_zeevee_input}')
@@ -87,6 +87,12 @@ class MuxHandlerZeeVee(MuxHandler):
 
         self.log.debug(f'not mapped to any input_key')
         return None
+
+    async def try_send_command(self, command):
+        try:
+            return await self.send_command(command)
+        except:
+            self.log.warning("send_command failed")
 
     async def send_command(self, command, success_line='Success'):
         async with self.command_lock:

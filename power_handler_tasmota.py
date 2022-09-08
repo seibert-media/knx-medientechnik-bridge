@@ -22,17 +22,23 @@ class PowerHandlerTasmota(PowerHandler):
 
     async def power_on(self) -> bool:
         self.log.info('Turning on')
-        result = await self.send_command('Power ON')
+        result = await self.try_send_command('Power ON')
         return result['POWER'] == 'ON'
 
     async def power_off(self) -> bool:
         self.log.info('Turning off')
-        result = await self.send_command('Power OFF')
+        result = await self.try_send_command('Power OFF')
         return result['POWER'] == 'OFF'
 
     async def is_powered_on(self) -> bool:
-        result = await self.send_command('Power')
+        result = await self.try_send_command('Power')
         return result['POWER'] == 'ON'
+
+    async def try_send_command(self, command):
+        try:
+            return await self.send_command(command)
+        except:
+            self.log.warning("send_command failed")
 
     async def send_command(self, command):
         async with aiohttp.ClientSession() as session:
