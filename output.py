@@ -11,6 +11,7 @@ class Output(object):
     def __init__(self, xknx_binding, output_key, output_conf):
         self.output_key = output_key
         self.output_conf = output_conf
+        self.should_auto_power_on = output_conf.get('auto_power_on', True)
 
         self.log = logging.getLogger(f'bridge.output["{output_key}"]')
         self.log.info('setup')
@@ -85,7 +86,7 @@ class Output(object):
         if self.mux_handler is not None:
             await self.mux_handler.select_input(input_key)
 
-        if self.power_handler is not None:
+        if self.power_handler is not None and self.should_auto_power_on:
             await self.power_handler.power_on()
 
     async def on_mux_input_changed(self, new_input_key):
