@@ -7,12 +7,12 @@ class PowerHandlerDummy(PowerHandler):
         self.power_state = False
 
     async def power_on(self) -> bool:
-        self.log.info('Turning on')
+        self.log.info('Would be Turning on')
         self.power_state = True
         return True
 
     async def power_off(self) -> bool:
-        self.log.info('Turning off')
+        self.log.info('Would be Turning off')
         self.power_state = False
         return True
 
