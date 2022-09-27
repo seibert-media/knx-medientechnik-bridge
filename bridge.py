@@ -81,12 +81,13 @@ async def teardown():
     dummy_input_handler().stop()
 
 
-loop = asyncio.get_event_loop()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 loop.run_until_complete(connect())
 loop.run_until_complete(setup())
 
 log.info('operational')
-
 try:
     loop.run_forever()
 except KeyboardInterrupt:
