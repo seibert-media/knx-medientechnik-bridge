@@ -61,7 +61,7 @@ class PowerHandlerPJLink(PowerHandler):
 
             command_line = auth_prefix + command
             self.log.debug(f'sending command_line {command_line.rstrip()}')
-            writer.write((command_line + "\r\n").encode('ascii'))
+            writer.write((command_line + "\r").encode('ascii'))
             await writer.drain()
 
             response_line = await read_line(reader)
