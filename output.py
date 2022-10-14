@@ -58,7 +58,7 @@ class Output(object):
             await self.set_input_buttons_to(current_input)
 
         if self.power_button_binding is not None:
-            await self.power_button_binding.set_state(await self.power_handler.is_powered_on()),
+            await self.power_button_binding.set_state(await self.power_handler.is_powered_on())
 
     async def stop(self):
         self.log.debug('stopping')
