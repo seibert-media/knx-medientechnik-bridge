@@ -32,7 +32,7 @@ class PowerHandlerPJLink(PowerHandler):
 
     async def try_send_command(self, command):
         try:
-            return await self.send_command(command)
+            return await asyncio.wait_for(self.send_command(command), timeout=1.0)
         except:
             self.log.warning("send_command failed")
 
