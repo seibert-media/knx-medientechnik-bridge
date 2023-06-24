@@ -4,7 +4,7 @@ import re
 
 from power_handler import PowerHandler
 
-MONITOR_POLL_INTERVAL_SECONDS = 1.0
+MONITOR_POLL_INTERVAL_SECONDS = 5.0
 MAX_LINE_LENGTH = 1000
 
 PJLINK_PORT = 4352
@@ -32,9 +32,11 @@ class PowerHandlerPJLink(PowerHandler):
 
     async def try_send_command(self, command):
         try:
-            return await asyncio.wait_for(self.send_command(command), timeout=1.0)
-        except:
-            self.log.warning("send_command failed")
+            return await asyncio.wait_for(self.send_command(command), timeout=20.0)
+        except TimeoutError:
+            self.log.warning("send_command timed out")
+        except Exception as e:
+            self.log.warning("send_command failed: " + repr(e))
 
     async def send_command(self, command: str) -> str:
         async with self.command_lock:
